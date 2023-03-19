@@ -1,0 +1,26 @@
+{
+  "name": "comunications-bingo-back",
+  "version": "1.0.0",
+  "description": "Back of bingo-comunications application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "bingo"
+  ],
+  "author": "Johan Mora",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "errorhandler": "^1.5.1",
+    "express": "^4.18.2",
+    "mongoose": "^7.0.2",
+    "morgan": "^1.10.0",
+    "socket.io": "^4.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21"
+  }
+}
