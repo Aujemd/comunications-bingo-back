@@ -1,11 +1,30 @@
 const express = require('express')
+const app = express()
+const http = require('http')
+const server = http.createServer(app)
+const { Server } = require('socket.io')
 
-const config = require('./server/config')
+const activeUsers = new Set()
 
-require('./database')
+const io = new Server(server, {
+  cors: {
+    origin: '*'
+  }
+})
 
-const app = config(express())
+io.sockets.on('connection', async (socket) => {
+  socket.on('new-player-request', (user) => {
+    socket.userId = user
+    activeUsers.add(user)
+    io.emit('new-user', [...activeUsers])
+  })
 
-app.listen(app.get('port'), () => {
-  console.log('Server on port', app.get('port'))
+  socket.on('disconnect', () => {
+    activeUsers.delete(socket.userId)
+    io.emit('user-disconnected', socket.userId)
+  })
+})
+
+server.listen(3000, () => {
+  console.log('listening on *:3000')
 })
