@@ -72,8 +72,6 @@ bingo.getCardBoard = () => {
 
   cardBoard[2][2] = -1
 
-  console.log(cardBoard)
-
   return cardBoard
 }
 module.exports = bingo

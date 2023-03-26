@@ -4,9 +4,9 @@ const http = require('http')
 const server = http.createServer(app)
 const { Server } = require('socket.io')
 const bingo = require('./controllers/bingo')
-let activeUsers = []
-let gameMode = ''
 
+let activeUsers = []
+let currentGameMode = ''
 const io = new Server(server, {
   cors: {
     origin: '*'
@@ -14,39 +14,42 @@ const io = new Server(server, {
 })
 
 io.sockets.on('connection', async (socket) => {
-  socket.on('set-mode', (mode) => {
-    if (!gameMode) {
-      gameMode = mode
+  socket.on('set-mode', (gameMode) => {
+    if (!currentGameMode) {
+      currentGameMode = gameMode.mode
     }
-
-    io.emit('lobby-closed', {
-      mode: gameMode
-    })
   })
 
   socket.on('request-game', (user) => {
-    const newUser = {
-      id: socket.id,
-      name: user.playerName
+    const isNewUser = activeUsers.find((user) => user.id === socket.id)
+    if (!isNewUser) {
+      const newUser = {
+        id: socket.id,
+        name: user.playerName
+      }
+
+      activeUsers.push(newUser)
+
+      socket.emit('joined-game', {
+        otherPlayers: [...activeUsers],
+        player: newUser
+      })
+
+      socket.broadcast.emit('player-connected', {
+        ...newUser
+      })
+
+      const newTable = bingo.getCardBoard()
+
+      socket.emit('table-assigned', {
+        id: socket.id,
+        table: newTable
+      })
+
+      setTimeout(() => {
+        io.emit('lobby-closed', 'xd')
+      }, 10000)
     }
-
-    activeUsers.push(newUser)
-
-    socket.emit('joined-game', {
-      otherPlayers: [...activeUsers],
-      player: newUser
-    })
-
-    io.emit('player-connected', {
-      ...newUser
-    })
-
-    const newTable = bingo.getCardBoard()
-
-    socket.emit('table-assigned', {
-      id: socket.id,
-      table: newTable
-    })
   })
 
   socket.on('answer-table', (answer) => {
