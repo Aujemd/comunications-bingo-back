@@ -7,6 +7,7 @@ const bingo = require('./controllers/bingo')
 
 let activeUsers = []
 let currentGameMode = ''
+let gameStarted = false
 const io = new Server(server, {
   cors: {
     origin: '*'
@@ -14,10 +15,19 @@ const io = new Server(server, {
 })
 
 io.sockets.on('connection', async (socket) => {
+  socket.emit('current-status', {
+    currentGameMode,
+    gameStarted
+  })
   socket.on('set-mode', (gameMode) => {
     if (!currentGameMode) {
       currentGameMode = gameMode.mode
     }
+
+    io.emit('current-status', {
+      currentGameMode,
+      gameStarted
+    })
   })
 
   socket.on('request-game', (user) => {
@@ -39,15 +49,20 @@ io.sockets.on('connection', async (socket) => {
         ...newUser
       })
 
-      const newTable = bingo.getCardBoard()
-
-      socket.emit('table-assigned', {
-        id: socket.id,
-        table: newTable
-      })
-
       setTimeout(() => {
-        io.emit('lobby-closed', 'xd')
+        gameStarted = true
+        io.emit('lobby-closed')
+        io.emit('current-status', {
+          currentGameMode,
+          gameStarted
+        })
+
+        const newTable = bingo.getCardBoard()
+
+        socket.emit('table-assigned', {
+          id: socket.id,
+          table: newTable
+        })
       }, 10000)
     }
   })
