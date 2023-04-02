@@ -6,8 +6,10 @@ const { Server } = require('socket.io')
 const bingo = require('./controllers/bingo')
 
 let activeUsers = []
+let usersStatus = []
 let currentGameMode = ''
 let gameStarted = false
+
 const io = new Server(server, {
   cors: {
     origin: '*'
@@ -39,6 +41,10 @@ io.sockets.on('connection', async (socket) => {
       }
 
       activeUsers.push(newUser)
+      usersStatus.push({
+        ...newUser,
+        tableAccept: false
+      })
 
       socket.emit('joined-game', {
         otherPlayers: [...activeUsers],
@@ -68,7 +74,38 @@ io.sockets.on('connection', async (socket) => {
   })
 
   socket.on('answer-table', (answer) => {
-    console.log(answer)
+    if (!answer.accept) {
+      const newTable = bingo.getCardBoard()
+
+      socket.emit('table-assigned', {
+        id: socket.id,
+        table: newTable
+      })
+    } else if (answer.accept) {
+      usersStatus.forEach((user) => {
+        if (user.id === socket.id) {
+          user.tableAccept = true
+        }
+      })
+    }
+
+    let startGame = true
+
+    usersStatus.forEach((user) => {
+      if (!user.tableAccept) {
+        startGame = false
+      }
+    })
+
+    if (startGame) {
+      io.emit('game-has-started', {})
+
+      setInterval(() => {
+        io.emit('num-announced', {
+          number: Math.floor(Math.random() * (75 - 1 + 1) + 1)
+        })
+      }, 2000)
+    }
   })
 
   socket.on('disconnect', () => {
