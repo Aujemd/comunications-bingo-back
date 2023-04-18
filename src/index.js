@@ -5,11 +5,13 @@ const server = http.createServer(app)
 const { Server } = require('socket.io')
 const bingo = require('./controllers/bingo')
 
+let currentUsers = []
 let activeUsers = []
 let usersStatus = []
 let currentGameMode = ''
 let gameStarted = false
 let numbers = []
+let intervalNumberID = ''
 
 const io = new Server(server, {
   cors: {
@@ -32,6 +34,7 @@ const isMarked = (value) => {
 }
 
 io.sockets.on('connection', async (socket) => {
+
   socket.emit('current-status', {
     currentGameMode,
     gameStarted
@@ -66,26 +69,41 @@ io.sockets.on('connection', async (socket) => {
         player: newUser
       })
 
-      socket.broadcast.emit('player-connected', {
-        ...newUser
+      io.emit('player-connected', {
+        activeUsers
+      })
+      // setTimeout(() => {
+      //   gameStarted = true
+      //   io.emit('lobby-closed')
+      //   io.emit('current-status', {
+      //     currentGameMode,
+      //     gameStarted
+      //   })
+
+      //   const newTable = bingo.getCardBoard()
+
+      //   socket.emit('table-assigned', {
+      //     id: socket.id,
+      //     table: newTable
+      //   })
+      // }, 5000)
+    }
+
+    socket.on('Start', (e) => {
+      gameStarted = true
+      io.emit('lobby-closed')
+      io.emit('current-status', {
+        currentGameMode,
+        gameStarted
       })
 
-      setTimeout(() => {
-        gameStarted = true
-        io.emit('lobby-closed')
-        io.emit('current-status', {
-          currentGameMode,
-          gameStarted
-        })
+      const newTable = bingo.getCardBoard()
 
-        const newTable = bingo.getCardBoard()
-
-        socket.emit('table-assigned', {
-          id: socket.id,
-          table: newTable
-        })
-      }, 500)
-    }
+      socket.emit('table-assigned', {
+        id: socket.id,
+        table: newTable
+      })
+    })
   })
 
   socket.on('answer-table', (answer) => {
@@ -115,7 +133,7 @@ io.sockets.on('connection', async (socket) => {
     if (startGame) {
       io.emit('game-has-started', {})
 
-      setInterval(() => {
+      intervalNumberID = setInterval(() => {
         let isSpawmed = true
         let numberRandom = -1
 
@@ -130,7 +148,7 @@ io.sockets.on('connection', async (socket) => {
         io.emit('num-announced', {
           number: numberRandom
         })
-      }, 1000)
+      }, 2000)
     }
   })
 
@@ -147,6 +165,7 @@ io.sockets.on('connection', async (socket) => {
       }
 
       if (win) {
+        clearInterval(intervalNumberID)
         let user = activeUsers.find((user) => user.id === socket.id)
         io.emit('win-announced', {
           winner: {
@@ -169,6 +188,7 @@ io.sockets.on('connection', async (socket) => {
       }
 
       if (win) {
+        clearInterval(intervalNumberID)
         let user = activeUsers.find((user) => user.id === socket.id)
         io.emit('win-announced', {
           winner: {
@@ -193,6 +213,7 @@ io.sockets.on('connection', async (socket) => {
         isMarked(table[3][1]) &&
         isMarked(table[4][0]))
     ) {
+      clearInterval(intervalNumberID)
       let user = activeUsers.find((user) => user.id === socket.id)
       io.emit('win-announced', {
         winner: {
