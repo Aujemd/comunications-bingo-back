@@ -148,7 +148,7 @@ io.sockets.on('connection', async (socket) => {
         io.emit('num-announced', {
           number: numberRandom
         })
-      }, 2000)
+      }, 1000)
     }
   })
 
@@ -233,6 +233,6 @@ io.sockets.on('connection', async (socket) => {
   })
 })
 
-server.listen(3000, () => {
-  console.log('listening on *:3000')
+server.listen(3001, () => {
+  console.log('listening on *:3001')
 })
